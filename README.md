@@ -1,5 +1,9 @@
 # Bachelor Thesis Project 2020
 
+## Git structure
+Directory called "Main" contains all the Python files needed to train the models used in the study. "Data" contains 
+the data gathered during training and analysis.
+
 ## Project dependencies 
 * This project requires the following modules that are listed in the [following file](https://github.com/a17drama/Thesis_Project_2020/blob/master/Main/dependencies.txt).
 * [Tensorflow GPU installation guide](https://www.tensorflow.org/install/gpu) (Fetched: 2020-02-24)
