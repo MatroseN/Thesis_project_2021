@@ -1,0 +1,6 @@
+,Min box,Medians,Max box,Min caps,Max caps,Outlier_0
+Batch size 8,87.54,88.38,88.91,86.51,90.41,
+Batch size 16,92.17,92.48,92.83,91.5,93.31,
+Batch size 32 BL,92.61,93.05,93.44,92.09,94.2,94.74
+Batch size 64,91.65,92.13,92.58,90.27,93.47,
+Batch size 128,89.86,90.56,90.89,89.3,91.95,
