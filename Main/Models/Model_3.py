@@ -30,13 +30,14 @@ class Model_3:
         self.author = "Ryssinspirerad"
         self.name = self.__class__.__name__
         self.description = "Ryssinspirerad"
+        self.seed = random_seed
 
         # Setting up seed for repeatability
         # More info on https://github.com/NVIDIA/tensorflow-determinism
         os.environ['TF_DETERMINISTIC_OPS'] = '1'
-        rn.seed(random_seed)
-        np.random.seed(random_seed)
-        tf.random.set_seed(random_seed)
+        rn.seed(self.seed)
+        np.random.seed(self.seed)
+        tf.random.set_seed(self.seed)
 
         self.timestamp = self.get_timestamp()
         self.epochs = 15
@@ -64,4 +65,4 @@ class Model_3:
         shutil.copy2("Models/" + self.name + ".py", file_path + self.get_name_with_timestamp(serial) + ".py")
 
     def get_variables(self):
-        return self.model.optimizer.__dict__, self.batch_size
+        return self.model.optimizer.__dict__, self.batch_size, self.seed

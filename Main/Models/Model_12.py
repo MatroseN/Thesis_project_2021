@@ -15,21 +15,20 @@ from datetime import datetime
 # 3rd party imports
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Flatten, Conv2D, AvgPool2D
 from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten, Conv2D, AvgPool2D
 
 
+""" 
+This is a dummy for speed testing
 """
-This is the base model.
-IMPORTANT!!! DO NOT MAKE CHANGES HERE!
-"""
 
 
-class Model_54:
-    def __init__(self, random_seed, serial, seed_serial):
-        self.author = "Anton"
+class Model_12:
+    def __init__(self, random_seed, serial, seed_serial, lr, momentum, batch_size):
+        self.author = "Drazen"
         self.name = self.__class__.__name__
-        self.description = "Convolutional layer"
+        self.description = "Batch size"
         self.serial = serial
         self.ss = seed_serial
         self.seed = random_seed
@@ -37,22 +36,17 @@ class Model_54:
         # Setting up seed for repeatability
         # More info on https://github.com/NVIDIA/tensorflow-determinism
         os.environ['TF_DETERMINISTIC_OPS'] = '1'
-        rn.seed(random_seed)
-        np.random.seed(random_seed)
-        tf.random.set_seed(random_seed)
         rn.seed(self.seed)
         np.random.seed(self.seed)
         tf.random.set_seed(self.seed)
 
         self.timestamp = self.get_timestamp()
-        self.epochs = 50  # prediction [15 = 89.45%, 20 = 89.67%, 25 = 91.36%, 30 = 91.36%, 35 = 91.36%]
-        self.batch_size = 32
+        self.epochs = 50
+        self.batch_size = batch_size
         self.verbose = 1
 
         self.model = Sequential()
         self.model.add(Conv2D(filters=6, kernel_size=(3, 3), activation='relu', input_shape=(32, 32, 3)))
-        self.model.add(AvgPool2D())
-        self.model.add(Conv2D(filters=16, kernel_size=(3, 3), activation='relu'))
         self.model.add(AvgPool2D())
         self.model.add(Conv2D(filters=16, kernel_size=(3, 3), activation='relu'))
         self.model.add(AvgPool2D())

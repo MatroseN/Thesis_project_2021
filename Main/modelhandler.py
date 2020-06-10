@@ -46,12 +46,15 @@ class ModelHandler:
     visualize = 0
     serial = -1
     limit = None
+    seeds = [29, 36544176, 36496465, 11659282, 27446959, 2839179, 78673800, 27108422, 97982238, 26650804, 46120159,
+             48338042, 10327887, 1754250, 68528643, 38938858, 16746034, 86013712, 52972280, 43073757, 69428798,
+             46914308, 5700174, 71924703, 88189417, 95390313, 33868108, 13030964, 9659070, 14179000]
 
     def __init__(self, device, verbose, visualize):
         self.make_directories()
         self.data = None
         self.device = device
-        self.random_seed = 29
+        self.random_seed = None
         self.verbose = verbose
         self.visualize = visualize
         self.load_data()
@@ -111,19 +114,19 @@ class ModelHandler:
         for i in range(len(results)):
             if self.data['labels'][self.data['y_test'][i]] == self.data['labels'][np.argmax(results[i])]:
                 correct += 1
-                matrix[self.data['y_test'][i]][np.argmax(results[i])] += 1
+                matrix[self.data['y_test'][i]][int(np.argmax(results[i]))] += 1
                 if self.visualize == 2 or self.visualize == 3:
                      self.visualize_prediction(i, self.data['labels'][np.argmax(results[i])])
             else:
                 incorrect += 1
-                matrix[self.data['y_test'][i]][np.argmax(results[i])] += 1
+                matrix[self.data['y_test'][i]][int(np.argmax(results[i]))] += 1
                 if self.visualize == 1 or self.visualize == 3:
                     self.visualize_prediction(i, self.data['labels'][np.argmax(results[i])])
 
         # Save prediction data to CSV file
         prediction_data = pd.DataFrame(
             np.array([[
-                m.get_name_with_timestamp(self.serial),
+                m.get_name_with_timestamp(),
                 str(correct),
                 str((correct / (correct + incorrect))),
                 str(incorrect),
@@ -131,11 +134,11 @@ class ModelHandler:
                 str(training_time)
             ]]),
             columns=['Model', 'num_correct', 'num_correct_percent', 'num_incorrect', 'num_incorrect_percent', 'training_time'])
-        prediction_data.to_csv(file_path + m.get_name_with_timestamp(self.serial) + "_prediction.csv")
+        prediction_data.to_csv(file_path + m.get_name_with_timestamp() + "_prediction.csv")
 
         # Save confusion matrix data to CSV file
         matrix_data = pd.DataFrame(matrix, columns=self.data["labels"], index=self.data["labels"])
-        matrix_data.to_csv(file_path + m.get_name_with_timestamp(self.serial) + "_confusion_matrix.csv")
+        matrix_data.to_csv(file_path + m.get_name_with_timestamp() + "_confusion_matrix.csv")
 
         # Console print
         print("Correct: " + str(correct) + " (" + str(round((correct / (correct + incorrect)) * 100, 2)) + " %) "
@@ -144,7 +147,7 @@ class ModelHandler:
 
         return [correct, incorrect]
 
-    def train_model(self, model_to_train, model_path, shared_stats, x, y, z, serial, debug_mode):
+    def train_model(self, model_to_train, model_path, shared_stats, x, y, z, serial, seed_serial, seed, debug_mode):
         """Train the model
 
         This functions creates a folder for the trained model where all files
@@ -163,6 +166,8 @@ class ModelHandler:
             :param y: placeholder for data
             :param z: placeholder for data
             :param serial: model serial number when training with grid search
+            :param seed_serial: index of current seed
+            :param seed: use this seed when creating the model
             :param debug_mode: Limits the number of training samples (boolean)
 
         Raises:
@@ -170,15 +175,15 @@ class ModelHandler:
             IOError: Could not find that file. Check the spelling!
         """
 
-        self.serial = serial
+        self.random_seed = seed
 
         if x == 0 and y == 0 and z == 0:
-            m = model_to_train(self.random_seed)
+            m = model_to_train(self.random_seed, serial, seed_serial)
         else:
-            m = model_to_train(self.random_seed, x, y, z)
+            m = model_to_train(self.random_seed, serial, seed_serial, x, y, z)
 
         # Create folder in Custom_logs for the model
-        file_path = 'Custom_logs/' + m.get_name_with_timestamp(self.serial) + "/"
+        file_path = 'Custom_logs/' + m.get_name_with_timestamp() + "/"
         try:
             os.mkdir(file_path)
         except OSError:
@@ -190,12 +195,12 @@ class ModelHandler:
             statistics = []
 
             # Save model settings in to a json file.
-            with open(file_path + m.get_name_with_timestamp(self.serial) + "_model_settings.json", 'w') as outfile:
+            with open(file_path + m.get_name_with_timestamp() + "_model_settings.json", 'w') as outfile:
                 json.dump(json.loads(m.model.to_json()), outfile)
 
             with tf.device(self.device):
                 start_time_specific_model = timer()
-                tboard_log_dir = os.path.join("Logs", m.get_name_with_timestamp(self.serial))
+                tboard_log_dir = os.path.join("Logs", m.get_name_with_timestamp())
                 tensorboard = TensorBoard(
                     log_dir=tboard_log_dir,
                     histogram_freq=0.0,
@@ -213,7 +218,7 @@ class ModelHandler:
                 )
 
                 save_callback = ModelCheckpoint(
-                    filepath="Trained_Models/" + m.get_name_with_timestamp(self.serial) + "_epoch_{epoch}.h5",
+                    filepath="Trained_Models/" + m.get_name_with_timestamp() + "_epoch_{epoch}.h5",
                     monitor='val_accuracy',
                     verbose=m.verbose,
                     save_best_only=True,
@@ -234,25 +239,26 @@ class ModelHandler:
 
                 # Save model hyper data data to CSV file
                 hyper_data = []
-                hyper, batch_size = m.get_variables()
+                hyper, batch_size, current_seed = m.get_variables()
                 hyper_data.append("batch_size," + str(batch_size))
+                hyper_data.append("seed," + str(current_seed))
                 for h in hyper:
                     hyper_data.append(h + "," + str(hyper[h]))
                 hyper_df = pd.DataFrame(hyper_data, columns=["Hyper parameters"])
-                hyper_df.to_csv(file_path + m.get_name_with_timestamp(self.serial) + "_hyper.csv")
+                hyper_df.to_csv(file_path + m.get_name_with_timestamp() + "_hyper.csv")
 
                 stop_time_specific_model = timer()
-                statistics.append(m.name + " S" + str(serial))
+                statistics.append(m.name + " S" + str(serial) + " R" + str(seed_serial))
                 statistics.append(self.load_input_data_time)
                 statistics.append(stop_time_specific_model - start_time_specific_model)
 
                 df = pd.DataFrame(stats.history)
-                df.to_csv(file_path + m.get_name_with_timestamp(self.serial) + ".csv")
+                df.to_csv(file_path + m.get_name_with_timestamp() + ".csv")
 
-                m.copy_model_file(serial, file_path)
+                m.copy_model_file(file_path)
                 statistics.append(self.predict(m, file_path, (stop_time_specific_model - start_time_specific_model)))
 
-            shared_stats[m.name + " S" + str(serial)] = statistics
+            shared_stats[m.name + " S" + str(serial) + " r" + str(seed_serial)] = statistics
 
         else:
             try:

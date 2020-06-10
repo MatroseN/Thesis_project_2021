@@ -17,13 +17,13 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 statistics = []
 
 # Training settings
-models_to_train = [0, 10]  # What model(s) do you want to train? Leave empty to train all
+models_to_train = [0, 11, 12]  # What model(s) do you want to train? Leave empty to train all
 width = []
 depth = []
 lr = [0.001, 0.005, 0.01, 0.015, 0.02]
 momentum = [0, 0.7, 0.8, 0.9, 0.95, 0.99]
 batch_size = [8, 16, 32, 64, 128]
-grid_search_models = [[10, lr, momentum, batch_size]]
+grid_search_models = [[11, lr, momentum, [0]], [12, [0], [0], batch_size]]  # [[10, lr, momentum, batch_size]]
 model_path = ""  # Path to model save file. If empty then training will occur
 device = "GPU"  # Chose CPU or GPU to train on
 verbose = 2  # 0 = Epoch results only, 1 = Regular progress bar, 2 = Epoch results and final iteration
@@ -43,33 +43,48 @@ if __name__ == "__main__":
         input(colored("WARNING!!! You are running DEBUG MODE. Confirm by pressing [Enter]. "
                       "Don't forget to focus the console window", "red"))
 
-    for model in models:
-        serial = 1
-        mod = str(model).split("_", 2)
-        mod = int(str(mod[1]).split(".", 2)[0])
-        for i in range(len(grid_search_models)):
-            if grid_search_models[i].__contains__(mod):
-                for x in grid_search_models[i][1]:
-                    for y in grid_search_models[i][2]:
-                        for z in grid_search_models[i][3]:
-                            print(colored("Training with grid search Model_" + str(grid_search_models[i][0])
-                                          + ", x = " + str(x) + ", y = " + str(y) + ", z = " + str(z) +
-                                          " Progress= " + str(serial) + "/"
-                                          + str(len(grid_search_models[i][1]) * len(grid_search_models[i][2]
-                                            * len(grid_search_models[i][3]))), 'yellow'))
-                            p = mp.Process(target=mho.train_model,
-                                           args=[model, model_path, statistics, x, y, z, serial, super_fast_debug_mode])
-                            p.start()
-                            p.join()
-                            del p
-                            serial += 1
-                train_single = False
-        if train_single:
-            p = mp.Process(target=mho.train_model,
-                           args=[model, model_path, statistics, 0, 0, 0, serial, super_fast_debug_mode])
-            p.start()
-            p.join()
-            del p
-        train_single = True
+    seed_serial = -1
+    if super_fast_debug_mode:
+        mho.data = mho.data[:2]
+    for seed in mho.seeds:
+        seed_serial += 1
+        for model in models:
+            serial = 1
+            mod = str(model).split("_", 2)
+            mod = int(str(mod[1]).split(".", 2)[0])
+            for i in range(len(grid_search_models)):
+                if grid_search_models[i].__contains__(mod):
+                    for x in grid_search_models[i][1]:
+                        for y in grid_search_models[i][2]:
+                            for z in grid_search_models[i][3]:
+                                print(colored("Seed index: " + str(seed_serial) + " Seed:" + str(seed), 'yellow'))
+                                print(colored("Training with grid search Model_" + str(grid_search_models[i][0])
+                                              + ", x = " + str(x) + ", y = " + str(y) + ", z = " + str(z) +
+                                              " Progress= " + str(serial) + "/"
+                                              + str(len(grid_search_models[i][1]) * len(grid_search_models[i][2]
+                                                * len(grid_search_models[i][3]))), 'yellow'))
+                                if super_fast_debug_mode and serial > 2:
+                                    serial += 1
+                                    print(colored("Skipping due to debug mode", 'red'))
+                                    pass
+                                else:
+                                    p = mp.Process(target=mho.train_model,
+                                                   args=(model, model_path, statistics, x, y, z, serial, seed_serial, seed,
+                                                         super_fast_debug_mode))
+                                    p.start()
+                                    p.join()
+                                    del p
+                                    serial += 1
+                    train_single = False
+            if train_single:
+                print(colored("Seed index: " + str(seed_serial) + " Seed:" + str(seed), 'yellow'))
+                print(colored("Training Model_" + str(mod), 'yellow'))
+                p = mp.Process(target=mho.train_model,
+                               args=(model, model_path, statistics, 0, 0, 0, serial, seed_serial, seed,
+                                     super_fast_debug_mode))
+                p.start()
+                p.join()
+                del p
+            train_single = True
 
     mho.print_statistics(statistics)
