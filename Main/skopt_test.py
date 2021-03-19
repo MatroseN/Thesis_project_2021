@@ -73,3 +73,11 @@ for n_iter in range(5):
 
 plt.show()
 
+plt.rcParams["figure.figsize"] = (6, 4)
+
+# Plot f(x) + contours
+_ = plot_gaussian_process(res, objective=f_wo_noise,
+                          noise_level=noise_level)
+
+plt.show()
+
