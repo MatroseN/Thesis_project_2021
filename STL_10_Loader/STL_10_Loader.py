@@ -25,14 +25,11 @@ DEPTH = 3
 # size of a single image in bytes
 SIZE = HEIGHT * WIDTH * DEPTH
 
-# path to the directory with the data
-DATA_DIR = '/STL-10/stl10_binary'
-
 # path to the binary train file with image data
-DATA_PATH = '/STL-10/stl10_binary/train_X.bin'
+DATA_PATH = 'STL-10/stl10_binary/train_X.bin'
 
 # path to the binary train file with labels
-LABEL_PATH = '/STL-10/stl10_binary/train_y.bin'
+LABEL_PATH = 'STL-10/stl10_binary/train_y.bin'
 
 
 def read_labels(path_to_labels):
@@ -70,7 +67,7 @@ def read_all_images(path_to_data):
         # You might want to comment this line or reverse the shuffle
         # if you will use a learning algorithm like CNN, since they like
         # their channels separated.
-        images = np.transpose(images, (0, 2, 3, 1))
+        images = np.transpose(images, (0, 3, 2, 1))
         return images
 
 
@@ -89,7 +86,7 @@ def read_single_image(image_file):
     # You might want to comment this line or reverse the shuffle
     # if you will use a learning algorithm like CNN, since they like
     # their channels separated.
-    image = np.transpose(image, (0, 2, 1))
+    image = np.transpose(image, (2, 1, 0))
     return image
 
 
@@ -108,9 +105,10 @@ if __name__ == "__main__":
         image = read_single_image(f)
         plot_image(image)
 
-    # test to check if the whole dataset is read correctly
-    images = read_all_images(DATA_PATH)
-    print(images.shape)
+        # test to check if the whole dataset is read correctly
+        images = read_all_images(DATA_PATH)
+        print(images.shape)
 
-    labels = read_labels(LABEL_PATH)
-    print(labels.shape)
+        labels = read_labels(LABEL_PATH)
+        print(labels.shape)
+
