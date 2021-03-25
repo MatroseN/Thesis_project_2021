@@ -10,3 +10,5 @@ Main/Logs
 Main/Models/
 Main/Trained_models/
 Main/__pycache__/
+
+STL_10_Loader/STL-10/
