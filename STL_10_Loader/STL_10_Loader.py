@@ -91,3 +91,26 @@ def read_single_image(image_file):
     # their channels separated.
     image = np.transpose(image, (0, 2, 1))
     return image
+
+
+def plot_image(image):
+    """
+    :param image: the image to be plotted in a 3-D matrix format
+    :return: None
+    """
+    plt.imshow(image)
+    plt.show()
+
+
+if __name__ == "__main__":
+    # test to check if the image is read correctly
+    with open(DATA_PATH) as f:
+        image = read_single_image(f)
+        plot_image(image)
+
+    # test to check if the whole dataset is read correctly
+    images = read_all_images(DATA_PATH)
+    print(images.shape)
+
+    labels = read_labels(LABEL_PATH)
+    print(labels.shape)
