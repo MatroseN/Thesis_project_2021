@@ -105,10 +105,10 @@ if __name__ == "__main__":
         image = read_single_image(f)
         plot_image(image)
 
-    # test to check if the whole dataset is read correctly
-    images = read_all_images(DATA_PATH)
-    print(images.shape)
+        # test to check if the whole dataset is read correctly
+        images = read_all_images(DATA_PATH)
+        print(images.shape)
 
-    labels = read_labels(LABEL_PATH)
-    print(labels.shape)
+        labels = read_labels(LABEL_PATH)
+        print(labels.shape)
 
