@@ -3,3 +3,10 @@ Main/.idea/
 Main/venv/
 venv/
 .idea/
+
+Main/Custom_logs
+Main/Input
+Main/Logs
+Main/Models/
+Main/Trained_models/
+Main/__pycache__/
