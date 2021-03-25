@@ -73,7 +73,7 @@ class ModelHandler:
         start_timer_loading = timer()
 
         try:
-            with open('Input/data2.pickle', 'rb') as file:
+            with open('Input/cifar10.pickle', 'rb') as file:
                 self.data = pickle.load(file, encoding='latin1')
         except IOError:
             print(colored("The dataset file you are trying to load from doesn't exist!", "red"))
@@ -110,7 +110,7 @@ class ModelHandler:
         correct = 0
         incorrect = 0
         # Declare and initialize a 2D confusion matrix
-        matrix = [[0 for i in range(43)] for j in range(43)]
+        matrix = [[0 for i in range(10)] for j in range(10)]
         for i in range(len(results)):
             if self.data['labels'][self.data['y_test'][i]] == self.data['labels'][np.argmax(results[i])]:
                 correct += 1
