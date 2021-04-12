@@ -14,12 +14,15 @@ from os import path
 from timeit import default_timer as timer
 
 # 3rd party imports
+from termcolor import colored
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from termcolor import colored
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
+from skopt.utils import use_named_args
+from skopt import space, gp_minimize
 
 # Custom imports
 import Main.Models as available_models
@@ -37,6 +40,16 @@ Alternative 2
     2. Evaluate the saved model
     3. Log evaluation data
 """
+
+lr_low = 1e-3
+lr_upp = 2e-2
+momentum_low = 0
+momentum_upp = 99e-2
+
+default_parameters = [0.01, 0.9]
+learning_rate = space.Real(low=lr_low, high=lr_upp, name='lr')
+momentum = space.Real(low=momentum_low, high=momentum_upp, name='mom')
+dimensions = [learning_rate, momentum]
 
 
 class ModelHandler:
@@ -58,6 +71,7 @@ class ModelHandler:
         self.verbose = verbose
         self.visualize = visualize
         self.load_data()
+        self.best_accuracy = 0.0
 
     def load_data(self):
         """Load data (traffic signs)
@@ -116,7 +130,7 @@ class ModelHandler:
                 correct += 1
                 matrix[self.data['y_test'][i]][int(np.argmax(results[i]))] += 1
                 if self.visualize == 2 or self.visualize == 3:
-                     self.visualize_prediction(i, self.data['labels'][np.argmax(results[i])])
+                    self.visualize_prediction(i, self.data['labels'][np.argmax(results[i])])
             else:
                 incorrect += 1
                 matrix[self.data['y_test'][i]][int(np.argmax(results[i]))] += 1
@@ -133,7 +147,8 @@ class ModelHandler:
                 str((incorrect / (correct + incorrect))),
                 str(training_time)
             ]]),
-            columns=['Model', 'num_correct', 'num_correct_percent', 'num_incorrect', 'num_incorrect_percent', 'training_time'])
+            columns=['Model', 'num_correct', 'num_correct_percent', 'num_incorrect', 'num_incorrect_percent',
+                     'training_time'])
         prediction_data.to_csv(file_path + m.get_name_with_timestamp() + "_prediction.csv")
 
         # Save confusion matrix data to CSV file
@@ -142,8 +157,9 @@ class ModelHandler:
 
         # Console print
         print("Correct: " + str(correct) + " (" + str(round((correct / (correct + incorrect)) * 100, 2)) + " %) "
-                "\nIncorrect: " + str(incorrect) + " (" + str(round((incorrect / (correct + incorrect)) * 100, 2))
-                + " %)\nTraining time: " + str(round(training_time, 2)) + "s")
+                                                                                                           "\nIncorrect: " + str(
+            incorrect) + " (" + str(round((incorrect / (correct + incorrect)) * 100, 2))
+              + " %)\nTraining time: " + str(round(training_time, 2)) + "s")
 
         return [correct, incorrect]
 
@@ -266,6 +282,114 @@ class ModelHandler:
                 self.predict(m, file_path, 0)
             except IOError:
                 print(colored("Could not find that file. Check the spelling!", "red"))
+
+    def bayesian_optimize(self, _STOCK, _INTERVALL, _TYPE):
+        search_results = gp_minimize(
+            func=self.train_model_bayesian_wrapper(_STOCK, _INTERVALL, _TYPE),
+            dimensions=dimensions,
+            acq_func='EI',
+            n_calls=31,
+            x0=default_parameters
+        )
+        return search_results
+
+    def train_model_bayesian_wrapper(self, _STOCK, _INTERVALL, _TYPE):
+
+        @use_named_args(dimensions=dimensions)
+        def train_model_bayesian(lr, mom):
+            """Train the model
+
+            This functions creates a folder for the trained model where all files
+            that are related (settings, statistics etc) to the model are saved to. If the parameter
+            "model_path" is NOT empty training will occur. If the parameter "model_path" IS empty
+            evaluation/prediction will occur instead.
+
+            There is a timer in this function that calculates the total training time. Total
+            training time = "Save model settings" + "model training".
+
+            Args:
+                :param lr: The learning rate that the model will use
+                :param mom: The momentum that the model will use
+
+            Raises:
+                OSError: Creation of the directory %s failed
+                IOError: Could not find that file. Check the spelling!
+            """
+            print()
+            print("Trying Values:" + " Learning rate = " + str(lr) + " Momentum = " + str(mom))
+            print()
+            # Hardcoded the model for simplicity
+            m = available_models.Model_70(lr, mom)
+
+            # Create folder in Custom_logs for the model
+            file_path = 'Custom_logs/' + m.get_name_with_timestamp() + "/"
+            try:
+                os.mkdir(file_path)
+            except OSError:
+                print("Creation of the directory %s failed" % file_path)
+
+            start_time_specific_model = 0
+            stop_time_specific_model = 0
+            statistics = []
+
+            # Save model settings in to a json file.
+            with open(file_path + m.get_name_with_timestamp() + "_model_settings.json", 'w') as outfile:
+                json.dump(json.loads(m.model.to_json()), outfile)
+
+            with tf.device(self.device):
+                start_time_specific_model = timer()
+                tboard_log_dir = os.path.join("Logs", m.get_name_with_timestamp())
+                tensorboard = TensorBoard(
+                    log_dir=tboard_log_dir,
+                    histogram_freq=0.0,
+                    write_graph=True,
+                    write_images=True)
+
+                early_stopping = EarlyStopping(
+                    monitor='val_accuracy',
+                    min_delta=0,
+                    patience=15,
+                    verbose=1,
+                    mode='auto',
+                    baseline=None,
+                    restore_best_weights=True
+                )
+
+                save_callback = ModelCheckpoint(
+                    filepath="Trained_Models/" + m.get_name_with_timestamp() + "_epoch_{epoch}.h5",
+                    monitor='val_accuracy',
+                    verbose=m.verbose,
+                    save_best_only=True,
+                    save_weights_only=False,
+                    mode='auto',
+                    save_freq='epoch')
+
+                stats = m.model.fit(self.data['x_train'][:self.limit],
+                                    self.data['y_train'][:self.limit],
+                                    batch_size=m.batch_size,
+                                    epochs=m.epochs,
+                                    validation_data=(self.data['x_validation'], self.data['y_validation']),
+                                    callbacks=[early_stopping, save_callback, tensorboard],
+                                    verbose=self.verbose)
+                val_acc = stats.history['val_accuracy'][-1]
+
+                if val_acc > self.best_accuracy:
+                    self.best_accuracy = val_acc
+
+                print()
+                print(colored("Validation Accuracy: {0:.2%}".format(val_acc), "yellow"))
+                print()
+
+                print()
+                print(colored("Best accuracy so far: {0:.2%}".format(self.best_accuracy), "green"))
+                print()
+
+                del m.model
+                tf.keras.backend.clear_session()
+
+            return -val_acc
+
+        return train_model_bayesian
 
     def make_directories(self):
         """ Create project folders
