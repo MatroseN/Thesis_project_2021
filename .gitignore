@@ -7,10 +7,13 @@ venv/
 Main/Custom_logs
 Main/Input
 Main/Logs
-Main/Models/
 Main/Trained_models/
 Main/__pycache__/
 
 STL_10_Loader/STL-10/
 
 *.pickle
+
+Main/Converge.png
+
+Main/Models/__pycache__/
