@@ -1,6 +1,7 @@
 # System imports
 import multiprocessing as mp
 import os
+import time
 
 # Log suppression
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Needs to be here. Otherwise leaking occurs and bunch of annoying logs show
@@ -30,7 +31,7 @@ lr_upp = 2e-2
 momentum_low = 0
 momentum_upp = 99e-2
 
-default_parameters = [0.01, 0.9]
+default_parameters = [0.01106077646582786, 0.7292735608785363]
 lr = space.Real(low=lr_low, high=lr_upp, prior='log-uniform', name='lr')
 momentum = space.Real(low=momentum_low, high=momentum_upp, prior='log-uniform', name='momentum')
 dimensions = [lr, momentum]
@@ -58,7 +59,15 @@ if __name__ == "__main__":
 
     print(colored("Training Model_70", 'yellow'))
 
+    start = time.perf_counter()
     search_results = mho.bayesian_optimize(_STOCK="DJI", _INTERVALL="", _TYPE="Daily")
+    end = time.perf_counter()
+
+    elapsed_time = end - start
+
+    print()
+    print(f"Total elapsed time {elapsed_time:0.4f} seconds")
+    print()
 
     # Best parameters found
     search_results.x

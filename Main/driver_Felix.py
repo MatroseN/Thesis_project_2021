@@ -17,7 +17,7 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 statistics = []
 
 # Training settings
-models_to_train = [65, 66, 67]  # What model(s) do you want to train? Leave empty to train all
+models_to_train = [0]  # What model(s) do you want to train? Leave empty to train all
 width = []
 depth = []
 lr = []

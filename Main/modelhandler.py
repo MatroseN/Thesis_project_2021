@@ -46,7 +46,7 @@ lr_upp = 2e-2
 momentum_low = 0
 momentum_upp = 99e-2
 
-default_parameters = [0.01, 0.9]
+default_parameters = [0.01106077646582786, 0.7292735608785363]
 learning_rate = space.Real(low=lr_low, high=lr_upp, name='lr')
 momentum = space.Real(low=momentum_low, high=momentum_upp, name='mom')
 dimensions = [learning_rate, momentum]
@@ -288,7 +288,7 @@ class ModelHandler:
             func=self.train_model_bayesian_wrapper(_STOCK, _INTERVALL, _TYPE),
             dimensions=dimensions,
             acq_func='EI',
-            n_calls=31,
+            n_calls=20,
             x0=default_parameters
         )
         return search_results
@@ -318,6 +318,9 @@ class ModelHandler:
             print()
             print("Trying Values:" + " Learning rate = " + str(lr) + " Momentum = " + str(mom))
             print()
+
+            best_val_acc_iter = 0
+
             # Hardcoded the model for simplicity
             m = available_models.Model_70(lr, mom)
 
@@ -371,7 +374,7 @@ class ModelHandler:
                                     validation_data=(self.data['x_validation'], self.data['y_validation']),
                                     callbacks=[early_stopping, save_callback, tensorboard],
                                     verbose=self.verbose)
-                val_acc = stats.history['val_accuracy'][-1]
+                val_acc = max(stats.history['val_accuracy'])
 
                 if val_acc > self.best_accuracy:
                     self.best_accuracy = val_acc

@@ -22,7 +22,7 @@ statistics = []
 # LeNet = [120, 84]
 # To test with width = [[[120, 84, 59, 41, 29], [84, 59, 41, 29, 20], [157, 110, 76, 53, 37], [240, 168, 118, 82, 58], [360, 252, 177, 123, 87]]
 
-models_to_train = [51, 52, 53, 54]  # What model(s) do you want to train? Leave empty to train all
+models_to_train = [55]  # What model(s) do you want to train? Leave empty to train all
 width = [[120, 84, 59, 41, 29], [84, 59, 41, 29, 20], [157, 110, 76, 53, 37], [240, 168, 118, 82, 58], [360, 252, 177, 123, 87]]
 depth = [1, 2, 3, 4, 5]
 lr = []
